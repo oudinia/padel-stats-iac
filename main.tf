@@ -1,38 +1,33 @@
+# ./main.tf
 terraform {
   required_providers {
     azurerm = {
-        source = "hashicorp/azurerm"
-        version = "~> 3.0"
+      source  = "hashicorp/azurerm"
+      version = "~> 3.0"
     }
   }
 }
 
 provider "azurerm" {
-    features {}
+  features {}
 }
 
-resource "azurerm_resource_group" "lesmoulineaux" {
-  name = "les-moulineaux"
-  location = "West Europe"
+resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group_name
+  location = var.location
 }
 
-resource "azurerm_service_plan" "lesmoulineaux" {
-  name                = "les-moulineaux-plan"
-  resource_group_name = azurerm_resource_group.lesmoulineaux.name
-  location            = azurerm_resource_group.lesmoulineaux.location
-  os_type             = "Linux"
-  sku_name            = "S1"
+module "acr" {
+  source              = "./modules/acr"
+  resource_group_name = var.resource_group_name
+  location            = var.location
+  acr_name            = var.acr_name
 }
 
-resource "azurerm_linux_web_app" "lesmoulineauxapi" {
-  name                = "les-moulineaux-linux-web-app"
-  location            = azurerm_resource_group.lesmoulineaux.location
-  resource_group_name = azurerm_resource_group.lesmoulineaux.name
-  service_plan_id     = azurerm_service_plan.lesmoulineaux.id
-
-  site_config {
-    application_stack {
-     dotnet_version = "8.0" 
-    }
-  }
+module "aci" {
+  source = "./modules/aci"
+  aci_name = var.aci_name
+  location = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  container_image = var.container_image
 }
